@@ -73,7 +73,7 @@
   .chip .rs{color:#B4566B}
   .empty{font-size:clamp(12px,1.7vmin,20px);color:#9A8F94;letter-spacing:.05em}
   /* ---- subject strip ---- */
-  .strip{display:grid;grid-template-columns:repeat(3,1fr);gap:2vmin;margin-top:1.8vmin;flex:none}
+  .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1.6vmin;margin-top:1.8vmin;flex:none;max-height:22vmin;overflow:auto}
   .scard{background:#fff;border:3px solid var(--line);border-radius:20px;padding:1.2vmin 1.6vmin;display:flex;
          align-items:center;justify-content:space-between;gap:1vmin;opacity:.55;transition:.25s}
   .scard .nm{font-size:clamp(15px,2.3vmin,28px);letter-spacing:.06em}
@@ -124,10 +124,49 @@
          border-radius:999px;padding:1.2vmin 3vmin;font-size:clamp(14px,2.4vmin,30px);letter-spacing:.05em;
          box-shadow:0 8px 0 rgba(0,0,0,.1);transition:transform .35s,opacity .35s;z-index:70}
   .toast.on{transform:translate(-50%,0);opacity:1}
+  @media (max-width:640px){
+    #subjSects .srow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.7vmin 1vmin;align-items:center}
+    #subjSects .srow > label:first-child{grid-column:1 / -1}
+    #subjSects .srow > .sName{grid-column:1 / -1;width:100%}
+    #subjSects .srow > .sDel{grid-column:1 / -1;justify-self:start}
+    #subjSects .srow > input[type=time]{width:100%;min-width:0}
+    .modal{padding:3vmin 2.2vmin;overflow-x:hidden}
+    input[type=text]{width:100%;max-width:100%}
+    input[type=number]{width:6ch}
+  }
   @media (max-width:900px){
     main{grid-template-columns:1fr}
-    .strip{grid-template-columns:1fr}
+    .strip{grid-template-columns:1fr;max-height:none;overflow:visible}
     #examCard{min-height:auto}
+  }
+  @media (max-width:700px){
+    html,body{overflow-x:hidden;height:auto;max-width:100%}
+    .card{overflow:hidden}
+    .two{gap:2vw}
+    .stat .v{font-size:10vw}
+    .stat .k{font-size:3.2vw}
+    .subj{font-size:12.5vw;word-break:break-all}
+    .count{font-size:10.5vw}
+    .badge{font-size:3.2vw;padding:.8vw 3vw}
+    .barmeta{font-size:3vw}
+    .absenthead{font-size:3.2vw}
+    .wrap{height:auto;padding:2.4vw 3vw;gap:1.6vw}
+    header{gap:2vw}
+    .ttl{font-size:5.2vw;white-space:normal}
+    .datebox{margin-left:0;order:3;width:100%;text-align:left;font-size:3.4vw}
+    .clock{font-size:10.5vw;margin-left:auto}
+    .card{padding:4.4vw 4vw;border-radius:6vw}
+    .subj{font-size:15.5vw}
+    .count{font-size:13.5vw}
+    .countlabel{font-size:3.6vw}
+    .stat .v{font-size:11vw}
+    .chip{font-size:3.4vw}
+    .scard .nm{font-size:4.2vw}
+    .tip{font-size:3.4vw}
+    .btn{font-size:3.4vw;padding:1.4vw 4vw}
+    .credit{position:static!important;font-size:2.8vw}
+    .overlay{padding:3vw}
+    .modal{width:100%;max-width:100%;padding:4vw 3.6vw;border-radius:5vw}
   }
 </style>
 </head>
@@ -225,7 +264,15 @@
       </div>
     </div>
 
-    <div id="subjSects"></div>
+    <div class="sect">
+      <h4>評估科目（想幾多科都得，可加可刪）</h4>
+      <div class="quick" id="presetRow" style="margin-bottom:1.2vmin"></div>
+      <div id="subjSects"></div>
+      <button class="qbtn" id="btnAddSubj" type="button" style="margin-top:.8vmin">＋ 加入科目</button>
+      <div class="quick" id="chipRow" style="margin-top:1.2vmin">
+        <span style="font-size:clamp(11px,1.45vmin,16px);color:#9A8F94;letter-spacing:.04em">先點一下科目格，再點下面：</span>
+      </div>
+    </div>
 
     <div class="sect">
       <h4>出缺席</h4>
@@ -250,7 +297,14 @@
 "use strict";
 const LSKEY = "hwps_exam_board_v1";
 const REASONS = ["病假","事假","公假","遲到","早退","其他"];
-const QUICK = ["中文","英文","數學","常識","科學","人文","普通話","視藝","音樂","體育","電腦"];
+const QUICK = ["中文聆聽","中文閱讀","中文寫作","中文說話","英文聆聽","英文閱讀","英文寫作","英文說話",
+  "數學","常識","科學","人文","普通話","聖經","音樂","視藝","體育","體評","電腦","温習","說評","學習活動"];
+const PRESETS = {
+  "11/12": [["中文閱讀","08:30","09:40"],["英文聆聽","09:55","10:35"],["温習／說話評估","10:50","12:00"]],
+  "11/13": [["英文","08:30","09:40"],["中文聆聽","09:55","10:35"],["中文寫作","10:50","12:00"]],
+  "11/16": [["數學","08:30","09:40"],["温習","09:55","10:35"],["科學","10:50","12:00"]],
+  "11/17": [["常識","08:30","09:40"],["聖經","09:55","10:35"],["學習活動／體評","10:50","12:00"]]
+};
 
 const DEFAULT = {
   title: "學段評估",
@@ -262,9 +316,9 @@ const DEFAULT = {
   expected: 28,
   absent: [],
   subjects: [
-    { name: "中文", start: "08:15", end: "09:25" },
-    { name: "英文", start: "10:00", end: "11:00" },
-    { name: "數學", start: "11:20", end: "12:20" }
+    { name: "中文閱讀", start: "08:30", end: "09:40" },
+    { name: "英文聆聽", start: "09:55", end: "10:35" },
+    { name: "温習／說話評估", start: "10:50", end: "12:00" }
   ]
 };
 
@@ -527,32 +581,54 @@ function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+let lastNameInput = null;
+
+function buildQuickUI() {
+  const pr = $("presetRow");
+  pr.innerHTML = '<span style="font-size:clamp(11px,1.45vmin,16px);color:#9A8F94;letter-spacing:.04em">一鍵載入評估日：</span>' +
+    Object.keys(PRESETS).map(d => '<button class="qbtn preset" type="button" data-d="' + d + '">' + d + "</button>").join("");
+  pr.querySelectorAll(".preset").forEach(b => b.addEventListener("click", () => {
+    collectSettings();
+    cfg.subjects = PRESETS[b.dataset.d].map(r => ({ name: r[0], start: r[1], end: r[2] }));
+    buildSubjSects();
+  }));
+  const cr = $("chipRow");
+  cr.insertAdjacentHTML("beforeend", QUICK.map(q => '<button class="qbtn chipfill" type="button" data-n="' + q + '">' + q + "</button>").join(""));
+  cr.querySelectorAll(".chipfill").forEach(b => b.addEventListener("click", () => {
+    if (lastNameInput) { lastNameInput.value = b.dataset.n; lastNameInput.focus(); }
+  }));
+  const add = $("btnAddSubj");
+  if (add) add.addEventListener("click", () => {
+    collectSettings();
+    cfg.subjects.push({ name: "", start: "", end: "" });
+    buildSubjSects();
+    const rows = document.querySelectorAll("#subjSects .srow .sName");
+    if (rows.length) rows[rows.length - 1].focus();
+  });
+}
+
 function buildSubjSects() {
   const host = $("subjSects");
-  host.innerHTML = "";
-  for (let i = 0; i < 3; i++) {
-    const s = cfg.subjects[i] || { name: "", start: "", end: "" };
-    const div = document.createElement("div");
-    div.className = "sect";
-    div.innerHTML =
-      '<h4>第 ' + (i + 1) + ' 科（可留空）</h4>' +
-      '<div class="row">' +
-      '<label>科目</label><input type="text" class="sName" value="' + esc(s.name) + '" style="width:9ch">' +
-      '<label>開始</label><input type="time" class="sStart" value="' + esc(s.start) + '">' +
-      '<label>結束</label><input type="time" class="sEnd" value="' + esc(s.end) + '">' +
-      '<button class="del sClear" type="button">清除</button>' +
-      "</div>" +
-      '<div class="quick">' + QUICK.map(q => '<button class="qbtn qPick" type="button" data-n="' + q + '">' + q + "</button>").join("") + "</div>";
-    host.appendChild(div);
-    div.querySelectorAll(".qPick").forEach(b => b.addEventListener("click", () => {
-      div.querySelector(".sName").value = b.dataset.n;
-    }));
-    div.querySelector(".sClear").addEventListener("click", () => {
-      div.querySelector(".sName").value = "";
-      div.querySelector(".sStart").value = "";
-      div.querySelector(".sEnd").value = "";
+  const arr = (cfg.subjects && cfg.subjects.length) ? cfg.subjects : [{ name: "", start: "", end: "" }];
+  host.innerHTML = arr.map((s, i) =>
+    '<div class="row srow" style="margin-bottom:.8vmin">' +
+    '<label style="min-width:4.2ch">第 ' + (i + 1) + ' 科</label>' +
+    '<input type="text" class="sName" value="' + esc(s.name) + '" style="width:14ch" placeholder="科目名稱">' +
+    '<label>開始</label><input type="time" class="sStart" value="' + esc(s.start) + '">' +
+    '<label>結束</label><input type="time" class="sEnd" value="' + esc(s.end) + '">' +
+    (arr.length > 1 ? '<button class="del sDel" type="button">刪除</button>' : '') +
+    "</div>"
+  ).join("");
+  host.querySelectorAll(".srow").forEach((row, i) => {
+    row.querySelector(".sName").addEventListener("focus", e => { lastNameInput = e.target; });
+    const del = row.querySelector(".sDel");
+    if (del) del.addEventListener("click", () => {
+      collectSettings();
+      cfg.subjects.splice(i, 1);
+      if (!cfg.subjects.length) cfg.subjects = [{ name: "", start: "", end: "" }];
+      buildSubjSects();
     });
-  }
+  });
 }
 
 function buildAbsentRows() {
@@ -606,12 +682,11 @@ function collectSettings() {
   cfg.warnM = Number($("fWarnM").value) || 0;
   cfg.warnS = Number($("fWarnS").value) || 0;
   cfg.expected = Number($("fExp").value) || 0;
-  const sects = document.querySelectorAll("#subjSects .sect");
   const arr = [];
-  sects.forEach(sec => {
-    const name = sec.querySelector(".sName").value.trim();
-    const start = sec.querySelector(".sStart").value;
-    const end = sec.querySelector(".sEnd").value;
+  document.querySelectorAll("#subjSects .srow").forEach(row => {
+    const name = row.querySelector(".sName").value.trim();
+    const start = row.querySelector(".sStart").value;
+    const end = row.querySelector(".sEnd").value;
     if (name && start && end) arr.push({ name: name, start: start, end: end });
   });
   cfg.subjects = arr;
@@ -666,6 +741,7 @@ document.addEventListener("keydown", e => {
   });
 })();
 
+buildQuickUI();
 tick();
 setInterval(tick, 500);
 document.addEventListener("click", () => { if (AC && AC.state === "suspended") AC.resume(); }, { once: true });
