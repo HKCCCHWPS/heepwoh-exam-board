@@ -24,6 +24,8 @@
   .wrap{max-width:1750px;margin:0 auto;padding:1.3vmin 2vmin .8vmin;height:100vh;display:flex;flex-direction:column;gap:.4vmin;overflow:hidden}
   /* ---------- header ---------- */
   header{display:flex;align-items:center;gap:1.4vmin;flex-wrap:wrap}
+  .ttlwrap{display:flex;flex-direction:column;gap:.2vmin}
+  .school{font-size:clamp(10px,1.55vmin,21px);color:#8A7F72;letter-spacing:.16em;font-weight:700}
   .ttl{display:flex;align-items:center;gap:1vmin;font-size:clamp(20px,3.1vmin,38px);letter-spacing:.04em;white-space:nowrap}
   .ttl .hl{background:linear-gradient(transparent 58%,var(--yellow) 58%,var(--yellow) 92%,transparent 92%);padding:0 .3em}
   .datebox{margin-left:auto;text-align:right;font-size:clamp(13px,1.75vmin,22px);color:#7A7267;letter-spacing:.05em}
@@ -173,7 +175,10 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="ttl"><span style="font-size:1.1em">📋</span><span class="hl" id="boardTitle">學段評估</span></div>
+    <div class="ttlwrap">
+      <div class="school" id="schoolLine">中華基督教會協和小學</div>
+      <div class="ttl"><span style="font-size:1.1em">📋</span><span class="hl" id="boardTitle">學段評估</span></div>
+    </div>
     <div class="datebox" id="dateBox">—</div>
     <div class="clock" id="clock">--:--:--</div>
   </header>
@@ -244,7 +249,8 @@
 
     <div class="sect">
       <div class="row">
-        <label>看板標題</label><input type="text" id="fTitle" style="width:14ch">
+        <label>學校名</label><input type="text" id="fSchool" style="width:20ch">
+        <label>看板標題</label><input type="text" id="fTitle" style="width:12ch">
         <label>班別</label><input type="text" id="fClass" style="width:7ch">
         <label>底部提示</label><input type="text" id="fTip" style="width:100%;max-width:100%;margin-top:.4vmin">
       </div>
@@ -307,6 +313,7 @@ const PRESETS = {
 };
 
 const DEFAULT = {
+  school: "中華基督教會協和小學",
   title: "學段評估",
   klass: "",
   tip: "✏️ 作答完記得檢查姓名及學號 ✏️",
@@ -433,6 +440,7 @@ function renderChrome() {
   $("dateBox").textContent = (d.getMonth() + 1) + " 月 " + d.getDate() + " 日　" + wd;
   $("clock").textContent = sec2clock(d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds());
   $("boardTitle").textContent = cfg.title || "學段評估";
+  $("schoolLine").textContent = cfg.school || "";
   $("tipLine").textContent = cfg.tip || "";
   $("mascot").textContent = cfg.mascot || "🐤";
   $("classLine").textContent = "班別：" + (cfg.klass || "—");
@@ -660,6 +668,7 @@ function recalcAct() {
 }
 
 function openSettings() {
+  $("fSchool").value = cfg.school || "";
   $("fTitle").value = cfg.title || "";
   $("fClass").value = cfg.klass || "";
   $("fTip").value = cfg.tip || "";
@@ -675,6 +684,7 @@ function openSettings() {
 }
 
 function collectSettings() {
+  cfg.school = $("fSchool").value.trim();
   cfg.title = $("fTitle").value.trim() || "學段評估";
   cfg.klass = $("fClass").value.trim();
   cfg.tip = $("fTip").value.trim();
