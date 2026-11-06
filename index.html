@@ -43,6 +43,9 @@
   .subj{font-size:clamp(44px,15vmin,210px);line-height:1.02;letter-spacing:.06em}
   .range{font-size:clamp(15px,2.2vmin,26px);background:#fff;border:2px solid var(--line);border-radius:999px;
          padding:.5vmin 2vmin;letter-spacing:.06em;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .meta{display:flex;flex-direction:column;gap:.9vmin;align-items:flex-start}
+  .dur{font-size:clamp(13px,2.1vmin,26px);background:var(--yellow);border:2px solid var(--line);border-radius:999px;
+        padding:.5vmin 2vmin;letter-spacing:.06em;white-space:nowrap}
   .countline{display:flex;align-items:baseline;gap:2vmin;flex-wrap:wrap;margin-top:1.4vmin}
   .countlabel{font-size:clamp(14px,2.1vmin,25px);letter-spacing:.05em;color:#4A443C}
   .count{font-size:clamp(34px,10.4vmin,150px);color:var(--red);font-variant-numeric:tabular-nums;line-height:1}
@@ -188,7 +191,10 @@
       <div class="badge" id="idxBadge">第 1 科 / 共 3 科</div>
       <div class="subjectline">
         <div class="subj" id="subjName">—</div>
-        <div class="range" id="subjRange">--:-- – --:--</div>
+        <div class="meta">
+          <div class="range" id="subjRange">--:-- – --:--</div>
+          <div class="dur" id="subjDur">時限：—</div>
+        </div>
       </div>
       <div class="countline">
         <div class="countlabel" id="countLabel">距離評估結束還有</div>
@@ -356,6 +362,16 @@ function sec2ms(s) {
   const m = Math.floor(s / 60), ss = s % 60;
   return pad(m) + ":" + pad(ss);
 }
+function fmtDur(a, b) {
+  const s = hm2sec(b) - hm2sec(a);
+  if (!(s > 0)) return "時限：—";
+  const m = Math.round(s / 60);
+  if (m >= 60) {
+    const hh = Math.floor(m / 60), mm = m % 60;
+    return "時限：" + hh + " 小時" + (mm ? " " + mm + " 分" : "");
+  }
+  return "時限：" + m + " 分鐘";
+}
 function fmtRemain(s) {
   s = Math.max(0, Math.round(s));
   if (s >= 3600) return Math.floor(s / 3600) + ":" + pad(Math.floor(s % 3600 / 60)) + ":" + pad(s % 60);
@@ -497,6 +513,7 @@ function tick() {
     badge.textContent = "第 " + (st.idx + 1) + " 科 / 共 " + st.list.length + " 科";
     subj.textContent = s.name;
     range.textContent = s.start + " – " + s.end;
+    $("subjDur").textContent = fmtDur(s.start, s.end);
     label.textContent = "距離評估結束還有";
     count.textContent = fmtRemain(st.remain);
     count.style.color = st.remain <= 60 ? "#D63325" : "var(--red)";
@@ -512,6 +529,7 @@ function tick() {
     badge.textContent = st.mode === "break" ? "小 息 時 段" : "評 估 未 開 始";
     subj.textContent = st.mode === "break" ? "小息中" : "準備";
     range.textContent = nx.start + " – " + nx.end;
+    $("subjDur").textContent = fmtDur(nx.start, nx.end);
     label.textContent = "距離「" + nx.name + "」開始還有";
     count.textContent = fmtRemain(st.remain);
     count.style.color = "#6FBF73";
@@ -525,6 +543,7 @@ function tick() {
     badge.textContent = "全 部 完 成";
     subj.textContent = "完成 🎉";
     range.textContent = "今日評估已結束";
+    $("subjDur").textContent = "";
     label.textContent = "收拾好，多謝大家";
     count.textContent = "再見";
     count.style.color = "#6FBF73";
@@ -538,6 +557,7 @@ function tick() {
     badge.textContent = "未 設 定";
     subj.textContent = "請先設定";
     range.textContent = "--:-- – --:--";
+    $("subjDur").textContent = "時限：—";
     label.textContent = "距離評估結束還有";
     count.textContent = "--:--";
     fill.style.width = "0%";
